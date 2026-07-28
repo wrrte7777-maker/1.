@@ -217,15 +217,17 @@
 
   <script>
     const STORAGE_KEY = 'trashReports';
-    let reports = loadReports();
-    let nextReportId = getNextReportId();
+    const API_URL = '/api/reports';
+    let reports = [];
+    let nextReportId = 1;
+    let useRemoteStorage = false;
 
     const reportForm = document.getElementById('report-form');
     const locationInput = document.getElementById('location');
     const descriptionInput = document.getElementById('description');
     const reportList = document.getElementById('report-list');
 
-    function loadReports() {
+    function loadLocalReports() {
       const savedReports = localStorage.getItem(STORAGE_KEY);
 
       if (!savedReports) {
@@ -235,7 +237,7 @@
       return JSON.parse(savedReports);
     }
 
-    function saveReports() {
+    function saveLocalReports() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
     }
 
@@ -248,17 +250,84 @@
       return lastReportId + 1;
     }
 
+    function renderEmptyMessage() {
+      reportList.innerHTML = '<p class="empty-message">아직 접수된 신고가 없습니다.</p>';
+    }
+
+    function renderReportList() {
+      reportList.innerHTML = '';
+
+      if (reports.length === 0) {
+        renderEmptyMessage();
+        return;
+      }
+
+      reports.forEach(renderReportCard);
+    }
+
+    async function loadReports() {
+      try {
+        const response = await fetch(API_URL);
+
+        if (!response.ok) {
+          throw new Error('공유 신고 목록을 불러오지 못했습니다.');
+        }
+
+        reports = await response.json();
+        useRemoteStorage = true;
+      } catch (error) {
+        reports = loadLocalReports();
+        useRemoteStorage = false;
+      }
+
+      nextReportId = getNextReportId();
+      renderReportList();
+    }
+
+    async function createReport(report) {
+      if (!useRemoteStorage) {
+        reports.push(report);
+        saveLocalReports();
+        return report;
+      }
+
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(report)
+      });
+
+      if (!response.ok) {
+        throw new Error('신고를 저장하지 못했습니다.');
+      }
+
+      return response.json();
+    }
+
+    async function completeReport(report) {
+      report.is_completed = true;
+
+      if (!useRemoteStorage) {
+        saveLocalReports();
+        return;
+      }
+
+      await fetch(`${API_URL}/${report.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ is_completed: true })
+      });
+    }
+
     function renderReportCard(report) {
       const existingCard = reportList.querySelector(`[data-report-id="${report.id}"]`);
 
       if (existingCard) {
         return;
-      }
-
-      const emptyMessage = reportList.querySelector('.empty-message');
-
-      if (emptyMessage) {
-        emptyMessage.remove();
       }
 
       const reportCard = document.createElement('article');
@@ -280,13 +349,12 @@
       completedStatus.className = 'completed-status';
       completedStatus.textContent = '처리 완료됨';
 
-      completeButton.addEventListener('click', () => {
+      completeButton.addEventListener('click', async () => {
         if (report.is_completed) {
           return;
         }
 
-        report.is_completed = true;
-        saveReports();
+        await completeReport(report);
         reportCard.classList.add('completed');
         completeButton.disabled = true;
       });
@@ -295,9 +363,7 @@
       reportList.appendChild(reportCard);
     }
 
-    reports.forEach(renderReportCard);
-
-    reportForm.addEventListener('submit', (event) => {
+    reportForm.addEventListener('submit', async (event) => {
       event.preventDefault();
 
       if (reportForm.dataset.submitting === 'true') {
@@ -321,16 +387,22 @@
         is_completed: false
       };
 
-      reports.push(report);
-      saveReports();
-      renderReportCard(report);
-      nextReportId += 1;
+      const savedReport = await createReport(report);
+
+      if (useRemoteStorage) {
+        reports.push(savedReport);
+      }
+
+      renderReportCard(savedReport);
+      nextReportId = getNextReportId();
       reportForm.reset();
 
       setTimeout(() => {
         reportForm.dataset.submitting = 'false';
       }, 0);
     });
+
+    loadReports();
   </script>
 </body>
 </html>
