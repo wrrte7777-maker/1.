@@ -216,15 +216,45 @@
   </main>
 
   <script>
-    const reports = [];
-    let nextReportId = 1;
+    const STORAGE_KEY = 'trashReports';
+    let reports = loadReports();
+    let nextReportId = getNextReportId();
 
     const reportForm = document.getElementById('report-form');
     const locationInput = document.getElementById('location');
     const descriptionInput = document.getElementById('description');
     const reportList = document.getElementById('report-list');
 
+    function loadReports() {
+      const savedReports = localStorage.getItem(STORAGE_KEY);
+
+      if (!savedReports) {
+        return [];
+      }
+
+      return JSON.parse(savedReports);
+    }
+
+    function saveReports() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+    }
+
+    function getNextReportId() {
+      if (reports.length === 0) {
+        return 1;
+      }
+
+      const lastReportId = Math.max(...reports.map((report) => report.id));
+      return lastReportId + 1;
+    }
+
     function renderReportCard(report) {
+      const existingCard = reportList.querySelector(`[data-report-id="${report.id}"]`);
+
+      if (existingCard) {
+        return;
+      }
+
       const emptyMessage = reportList.querySelector('.empty-message');
 
       if (emptyMessage) {
@@ -237,7 +267,8 @@
       const completeButton = document.createElement('button');
       const completedStatus = document.createElement('p');
 
-      reportCard.className = 'report-card';
+      reportCard.className = report.is_completed ? 'report-card completed' : 'report-card';
+      reportCard.dataset.reportId = report.id;
       locationText.innerHTML = '<strong>위치</strong>: ';
       locationText.append(report.location);
       descriptionText.innerHTML = '<strong>설명</strong>: ';
@@ -245,6 +276,7 @@
       completeButton.className = 'complete-button';
       completeButton.type = 'button';
       completeButton.textContent = '처리 완료';
+      completeButton.disabled = report.is_completed;
       completedStatus.className = 'completed-status';
       completedStatus.textContent = '처리 완료됨';
 
@@ -254,6 +286,7 @@
         }
 
         report.is_completed = true;
+        saveReports();
         reportCard.classList.add('completed');
         completeButton.disabled = true;
       });
@@ -262,13 +295,22 @@
       reportList.appendChild(reportCard);
     }
 
+    reports.forEach(renderReportCard);
+
     reportForm.addEventListener('submit', (event) => {
       event.preventDefault();
+
+      if (reportForm.dataset.submitting === 'true') {
+        return;
+      }
+
+      reportForm.dataset.submitting = 'true';
 
       const location = locationInput.value.trim();
       const description = descriptionInput.value.trim();
 
       if (!location || !description) {
+        reportForm.dataset.submitting = 'false';
         return;
       }
 
@@ -280,9 +322,14 @@
       };
 
       reports.push(report);
+      saveReports();
       renderReportCard(report);
       nextReportId += 1;
       reportForm.reset();
+
+      setTimeout(() => {
+        reportForm.dataset.submitting = 'false';
+      }, 0);
     });
   </script>
 </body>
