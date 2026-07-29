@@ -1,3 +1,4 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/server.js b/server.js
 index d4cb89cac2e2ada15835b6d04a7dc6716be35c90..2c6aa44f2c5fd73dddcc8a8bd6d4995f7115feec 100644
 --- a/server.js
@@ -280,3 +281,6 @@ index d4cb89cac2e2ada15835b6d04a7dc6716be35c90..2c6aa44f2c5fd73dddcc8a8bd6d4995f
 +    console.error('ECO-PICK database initialization failed:', error.message);
 +    process.exit(1);
 +  });
+ 
+EOF
+)
