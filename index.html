@@ -149,6 +149,45 @@
       line-height: 1.5;
     }
 
+    .report-card-content {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .report-photo {
+      width: 120px;
+      height: 120px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #eef2f0;
+      flex-shrink: 0;
+    }
+
+    .report-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .time-left {
+      display: block;
+      margin-bottom: 8px;
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 520px) {
+      .report-card-content {
+        flex-direction: column;
+      }
+
+      .report-photo {
+        width: 100%;
+        height: 180px;
+      }
+    }
+
     .complete-button {
       border: 0;
       border-radius: 8px;
@@ -218,14 +257,24 @@
   <script>
     const STORAGE_KEY = 'trashReports';
     const API_URL = '/api/reports';
+    const REPORT_EXPIRATION_MS = 24 * 60 * 60 * 1000;
     let reports = [];
     let nextReportId = 1;
     let useRemoteStorage = false;
 
     const reportForm = document.getElementById('report-form');
+    const photoInput = document.getElementById('photo');
     const locationInput = document.getElementById('location');
     const descriptionInput = document.getElementById('description');
     const reportList = document.getElementById('report-list');
+
+    function isReportExpired(report) {
+      return Date.now() - new Date(report.created_at).getTime() >= REPORT_EXPIRATION_MS;
+    }
+
+    function getActiveReports(reportItems) {
+      return reportItems.filter((report) => !isReportExpired(report));
+    }
 
     function loadLocalReports() {
       const savedReports = localStorage.getItem(STORAGE_KEY);
@@ -234,7 +283,9 @@
         return [];
       }
 
-      return JSON.parse(savedReports);
+      const activeReports = getActiveReports(JSON.parse(savedReports));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(activeReports));
+      return activeReports;
     }
 
     function saveLocalReports() {
@@ -250,6 +301,31 @@
       return lastReportId + 1;
     }
 
+    function getTimeLeftText(report) {
+      const createdAt = new Date(report.created_at).getTime();
+      const remainingMs = Math.max(0, REPORT_EXPIRATION_MS - (Date.now() - createdAt));
+      const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+      const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+
+      return `${hours}시간 ${minutes}분 남음`;
+    }
+
+    function readPhotoData() {
+      const [photoFile] = photoInput.files;
+
+      if (!photoFile) {
+        return Promise.resolve('');
+      }
+
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.addEventListener('load', () => resolve(reader.result));
+        reader.addEventListener('error', reject);
+        reader.readAsDataURL(photoFile);
+      });
+    }
+
     function renderEmptyMessage() {
       reportList.innerHTML = '<p class="empty-message">아직 접수된 신고가 없습니다.</p>';
     }
@@ -263,6 +339,7 @@
       }
 
       reports.forEach(renderReportCard);
+      updateTimeLeftLabels();
     }
 
     async function loadReports() {
@@ -273,7 +350,7 @@
           throw new Error('공유 신고 목록을 불러오지 못했습니다.');
         }
 
-        reports = await response.json();
+        reports = getActiveReports(await response.json());
         useRemoteStorage = true;
       } catch (error) {
         reports = loadLocalReports();
@@ -323,6 +400,33 @@
       });
     }
 
+    function removeExpiredReports() {
+      const activeReports = getActiveReports(reports);
+
+      if (activeReports.length === reports.length) {
+        updateTimeLeftLabels();
+        return;
+      }
+
+      reports = activeReports;
+
+      if (!useRemoteStorage) {
+        saveLocalReports();
+      }
+
+      renderReportList();
+    }
+
+    function updateTimeLeftLabels() {
+      reports.forEach((report) => {
+        const timeLeftLabel = reportList.querySelector(`[data-time-left-id="${report.id}"]`);
+
+        if (timeLeftLabel) {
+          timeLeftLabel.textContent = getTimeLeftText(report);
+        }
+      });
+    }
+
     function renderReportCard(report) {
       const existingCard = reportList.querySelector(`[data-report-id="${report.id}"]`);
 
@@ -331,6 +435,9 @@
       }
 
       const reportCard = document.createElement('article');
+      const cardContent = document.createElement('div');
+      const reportDetails = document.createElement('div');
+      const timeLeftLabel = document.createElement('small');
       const locationText = document.createElement('p');
       const descriptionText = document.createElement('p');
       const completeButton = document.createElement('button');
@@ -338,6 +445,11 @@
 
       reportCard.className = report.is_completed ? 'report-card completed' : 'report-card';
       reportCard.dataset.reportId = report.id;
+      cardContent.className = 'report-card-content';
+      reportDetails.className = 'report-details';
+      timeLeftLabel.className = 'time-left';
+      timeLeftLabel.dataset.timeLeftId = report.id;
+      timeLeftLabel.textContent = getTimeLeftText(report);
       locationText.innerHTML = '<strong>위치</strong>: ';
       locationText.append(report.location);
       descriptionText.innerHTML = '<strong>설명</strong>: ';
@@ -349,6 +461,14 @@
       completedStatus.className = 'completed-status';
       completedStatus.textContent = '처리 완료됨';
 
+      if (report.photoData) {
+        const reportPhoto = document.createElement('img');
+        reportPhoto.className = 'report-photo';
+        reportPhoto.src = report.photoData;
+        reportPhoto.alt = `${report.location} 신고 사진`;
+        cardContent.append(reportPhoto);
+      }
+
       completeButton.addEventListener('click', async () => {
         if (report.is_completed) {
           return;
@@ -359,7 +479,9 @@
         completeButton.disabled = true;
       });
 
-      reportCard.append(locationText, descriptionText, completeButton, completedStatus);
+      reportDetails.append(timeLeftLabel, locationText, descriptionText, completeButton, completedStatus);
+      cardContent.append(reportDetails);
+      reportCard.append(cardContent);
       reportList.appendChild(reportCard);
     }
 
@@ -384,6 +506,8 @@
         id: nextReportId,
         location,
         description,
+        photoData: await readPhotoData(),
+        created_at: new Date().toISOString(),
         is_completed: false
       };
 
@@ -403,6 +527,7 @@
     });
 
     loadReports();
+    setInterval(removeExpiredReports, 60 * 1000);
   </script>
 </body>
 </html>
