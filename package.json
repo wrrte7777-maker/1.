@@ -1,12 +1,24 @@
-{
-  "name": "trash-report-mvp",
-  "version": "1.0.0",
-  "description": "Korean illegal-dumping report MVP with a small shared Node.js backend.",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "engines": {
-    "node": ">=18"
-  }
-}
+diff --git a/package.json b/package.json
+index 5e507945a55fc1a210fe6d862d9233a0faa95b1e..e479289b219562ef59b168be5f621c7581f155aa 100644
+--- a/package.json
++++ b/package.json
+@@ -1,12 +1,16 @@
+ {
+-  "name": "trash-report-mvp",
++  "name": "eco-pick",
+   "version": "1.0.0",
+-  "description": "Korean illegal-dumping report MVP with a small shared Node.js backend.",
++  "description": "ECO-PICK community waste reporting service.",
+   "main": "server.js",
+   "scripts": {
+-    "start": "node server.js"
++    "start": "node server.js",
++    "check": "node --check server.js"
++  },
++  "dependencies": {
++    "pg": "^8.16.3"
+   },
+   "engines": {
+     "node": ">=18"
+   }
+ }
