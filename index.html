@@ -1,533 +1,666 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>쓰레기 무단투기 신고</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f7f5;
-      color: #1f2933;
-    }
-
-    .page-header {
-      background: #1f8a5b;
-      color: #ffffff;
-      padding: 32px 20px;
-      text-align: center;
-    }
-
-    .page-header h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
-    }
-
-    .page-header p {
-      margin: 0;
-      font-size: 16px;
-      opacity: 0.9;
-    }
-
-    main {
-      width: min(100%, 720px);
-      margin: 28px auto;
-      padding: 0 20px;
-    }
-
-    .report-form {
-      background: #ffffff;
-      border-radius: 14px;
-      box-shadow: 0 8px 24px rgba(31, 41, 51, 0.12);
-      padding: 24px;
-    }
-
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-
-    input[type="file"],
-    input[type="text"],
-    textarea {
-      width: 100%;
-      border: 1px solid #cbd5d1;
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 15px;
-      font-family: inherit;
-      background: #ffffff;
-    }
-
-    input[type="file"] {
-      padding: 10px;
-    }
-
-    input:focus,
-    textarea:focus {
-      outline: none;
-      border-color: #1f8a5b;
-      box-shadow: 0 0 0 3px rgba(31, 138, 91, 0.15);
-    }
-
-    textarea {
-      min-height: 130px;
-      resize: vertical;
-    }
-
-    .submit-button {
-      width: 100%;
-      border: 0;
-      border-radius: 10px;
-      padding: 14px 18px;
-      background: #1f8a5b;
-      color: #ffffff;
-      font-size: 16px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
-    }
-
-    .submit-button:hover {
-      background: #176c47;
-      transform: translateY(-1px);
-    }
-
-    .submit-button:active {
-      transform: translateY(0);
-    }
-
-    .report-list-section {
-      margin-top: 28px;
-    }
-
-    .report-list-section h2 {
-      margin: 0 0 16px;
-      font-size: 22px;
-    }
-
-    .report-list {
-      display: grid;
-      gap: 14px;
-    }
-
-    .empty-message {
-      margin: 0;
-      padding: 20px;
-      border: 1px dashed #a8b8b0;
-      border-radius: 12px;
-      background: #ffffff;
-      color: #607166;
-      text-align: center;
-    }
-
-    .report-card {
-      background: #ffffff;
-      border-left: 5px solid #1f8a5b;
-      border-radius: 12px;
-      box-shadow: 0 5px 16px rgba(31, 41, 51, 0.1);
-      padding: 18px;
-    }
-
-    .report-card.completed {
-      background: #e5e7eb;
-      border-left-color: #6b7280;
-    }
-
-    .report-card p {
-      margin: 0 0 10px;
-      line-height: 1.5;
-    }
-
-    .report-card-content {
-      display: flex;
-      gap: 16px;
-      align-items: flex-start;
-    }
-
-    .report-photo {
-      width: 120px;
-      height: 120px;
-      border-radius: 10px;
-      object-fit: cover;
-      background: #eef2f0;
-      flex-shrink: 0;
-    }
-
-    .report-details {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .time-left {
-      display: block;
-      margin-bottom: 8px;
-      color: #6b7280;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    @media (max-width: 520px) {
-      .report-card-content {
-        flex-direction: column;
-      }
-
-      .report-photo {
-        width: 100%;
-        height: 180px;
-      }
-    }
-
-    .complete-button {
-      border: 0;
-      border-radius: 8px;
-      padding: 10px 14px;
-      background: #e7f5ee;
-      color: #176c47;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .complete-button:disabled {
-      background: #d1d5db;
-      color: #4b5563;
-      cursor: default;
-    }
-
-    .completed-status {
-      display: none;
-      margin: 12px 0 0;
-      color: #374151;
-      font-weight: 700;
-    }
-
-    .report-card.completed .completed-status {
-      display: block;
-    }
-
-    .report-card.completed .complete-button {
-      display: none;
-    }
-  </style>
-</head>
-<body>
-  <header class="page-header">
-    <h1>쓰레기 무단투기 신고</h1>
-    <p>사진과 위치를 남겨 깨끗한 동네 만들기에 참여해 주세요.</p>
-  </header>
-
-  <main>
-    <form class="report-form" id="report-form" action="#" method="post" enctype="multipart/form-data">
-      <div class="form-group">
-        <label for="photo">사진 첨부</label>
-        <input type="file" id="photo" name="photo" accept="image/*">
-      </div>
-
-      <div class="form-group">
-        <label for="location">쓰레기 위치</label>
-        <input type="text" id="location" name="location" placeholder="예: 해운대구 우동 123 앞" required>
-      </div>
-
-      <div class="form-group">
-        <label for="description">상세 설명</label>
-        <textarea id="description" name="description" placeholder="쓰레기 종류, 주변 특징, 발견 시간 등을 적어주세요." required></textarea>
-      </div>
-
-      <button class="submit-button" type="submit">신고하기</button>
-    </form>
-
-    <section class="report-list-section" aria-labelledby="report-list-title">
-      <h2 id="report-list-title">신고 접수 목록</h2>
-      <div class="report-list" id="report-list">
-        <p class="empty-message">아직 접수된 신고가 없습니다.</p>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    const STORAGE_KEY = 'trashReports';
-    const API_URL = '/api/reports';
-    const REPORT_EXPIRATION_MS = 24 * 60 * 60 * 1000;
-    let reports = [];
-    let nextReportId = 1;
-    let useRemoteStorage = false;
-
-    const reportForm = document.getElementById('report-form');
-    const photoInput = document.getElementById('photo');
-    const locationInput = document.getElementById('location');
-    const descriptionInput = document.getElementById('description');
-    const reportList = document.getElementById('report-list');
-
-    function isReportExpired(report) {
-      return Date.now() - new Date(report.created_at).getTime() >= REPORT_EXPIRATION_MS;
-    }
-
-    function getActiveReports(reportItems) {
-      return reportItems.filter((report) => !isReportExpired(report));
-    }
-
-    function loadLocalReports() {
-      const savedReports = localStorage.getItem(STORAGE_KEY);
-
-      if (!savedReports) {
-        return [];
-      }
-
-      const activeReports = getActiveReports(JSON.parse(savedReports));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(activeReports));
-      return activeReports;
-    }
-
-    function saveLocalReports() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
-    }
-
-    function getNextReportId() {
-      if (reports.length === 0) {
-        return 1;
-      }
-
-      const lastReportId = Math.max(...reports.map((report) => report.id));
-      return lastReportId + 1;
-    }
-
-    function getTimeLeftText(report) {
-      const createdAt = new Date(report.created_at).getTime();
-      const remainingMs = Math.max(0, REPORT_EXPIRATION_MS - (Date.now() - createdAt));
-      const hours = Math.floor(remainingMs / (60 * 60 * 1000));
-      const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
-
-      return `${hours}시간 ${minutes}분 남음`;
-    }
-
-    function readPhotoData() {
-      const [photoFile] = photoInput.files;
-
-      if (!photoFile) {
-        return Promise.resolve('');
-      }
-
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.addEventListener('load', () => resolve(reader.result));
-        reader.addEventListener('error', reject);
-        reader.readAsDataURL(photoFile);
-      });
-    }
-
-    function renderEmptyMessage() {
-      reportList.innerHTML = '<p class="empty-message">아직 접수된 신고가 없습니다.</p>';
-    }
-
-    function renderReportList() {
-      reportList.innerHTML = '';
-
-      if (reports.length === 0) {
-        renderEmptyMessage();
-        return;
-      }
-
-      reports.forEach(renderReportCard);
-      updateTimeLeftLabels();
-    }
-
-    async function loadReports() {
-      try {
-        const response = await fetch(API_URL);
-
-        if (!response.ok) {
-          throw new Error('공유 신고 목록을 불러오지 못했습니다.');
-        }
-
-        reports = getActiveReports(await response.json());
-        useRemoteStorage = true;
-      } catch (error) {
-        reports = loadLocalReports();
-        useRemoteStorage = false;
-      }
-
-      nextReportId = getNextReportId();
-      renderReportList();
-    }
-
-    async function createReport(report) {
-      if (!useRemoteStorage) {
-        reports.push(report);
-        saveLocalReports();
-        return report;
-      }
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(report)
-      });
-
-      if (!response.ok) {
-        throw new Error('신고를 저장하지 못했습니다.');
-      }
-
-      return response.json();
-    }
-
-    async function completeReport(report) {
-      report.is_completed = true;
-
-      if (!useRemoteStorage) {
-        saveLocalReports();
-        return;
-      }
-
-      await fetch(`${API_URL}/${report.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ is_completed: true })
-      });
-    }
-
-    function removeExpiredReports() {
-      const activeReports = getActiveReports(reports);
-
-      if (activeReports.length === reports.length) {
-        updateTimeLeftLabels();
-        return;
-      }
-
-      reports = activeReports;
-
-      if (!useRemoteStorage) {
-        saveLocalReports();
-      }
-
-      renderReportList();
-    }
-
-    function updateTimeLeftLabels() {
-      reports.forEach((report) => {
-        const timeLeftLabel = reportList.querySelector(`[data-time-left-id="${report.id}"]`);
-
-        if (timeLeftLabel) {
-          timeLeftLabel.textContent = getTimeLeftText(report);
-        }
-      });
-    }
-
-    function renderReportCard(report) {
-      const existingCard = reportList.querySelector(`[data-report-id="${report.id}"]`);
-
-      if (existingCard) {
-        return;
-      }
-
-      const reportCard = document.createElement('article');
-      const cardContent = document.createElement('div');
-      const reportDetails = document.createElement('div');
-      const timeLeftLabel = document.createElement('small');
-      const locationText = document.createElement('p');
-      const descriptionText = document.createElement('p');
-      const completeButton = document.createElement('button');
-      const completedStatus = document.createElement('p');
-
-      reportCard.className = report.is_completed ? 'report-card completed' : 'report-card';
-      reportCard.dataset.reportId = report.id;
-      cardContent.className = 'report-card-content';
-      reportDetails.className = 'report-details';
-      timeLeftLabel.className = 'time-left';
-      timeLeftLabel.dataset.timeLeftId = report.id;
-      timeLeftLabel.textContent = getTimeLeftText(report);
-      locationText.innerHTML = '<strong>위치</strong>: ';
-      locationText.append(report.location);
-      descriptionText.innerHTML = '<strong>설명</strong>: ';
-      descriptionText.append(report.description);
-      completeButton.className = 'complete-button';
-      completeButton.type = 'button';
-      completeButton.textContent = '처리 완료';
-      completeButton.disabled = report.is_completed;
-      completedStatus.className = 'completed-status';
-      completedStatus.textContent = '처리 완료됨';
-
-      if (report.photoData) {
-        const reportPhoto = document.createElement('img');
-        reportPhoto.className = 'report-photo';
-        reportPhoto.src = report.photoData;
-        reportPhoto.alt = `${report.location} 신고 사진`;
-        cardContent.append(reportPhoto);
-      }
-
-      completeButton.addEventListener('click', async () => {
-        if (report.is_completed) {
-          return;
-        }
-
-        await completeReport(report);
-        reportCard.classList.add('completed');
-        completeButton.disabled = true;
-      });
-
-      reportDetails.append(timeLeftLabel, locationText, descriptionText, completeButton, completedStatus);
-      cardContent.append(reportDetails);
-      reportCard.append(cardContent);
-      reportList.appendChild(reportCard);
-    }
-
-    reportForm.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      if (reportForm.dataset.submitting === 'true') {
-        return;
-      }
-
-      reportForm.dataset.submitting = 'true';
-
-      const location = locationInput.value.trim();
-      const description = descriptionInput.value.trim();
-
-      if (!location || !description) {
-        reportForm.dataset.submitting = 'false';
-        return;
-      }
-
-      const report = {
-        id: nextReportId,
-        location,
-        description,
-        photoData: await readPhotoData(),
-        created_at: new Date().toISOString(),
-        is_completed: false
-      };
-
-      const savedReport = await createReport(report);
-
-      if (useRemoteStorage) {
-        reports.push(savedReport);
-      }
-
-      renderReportCard(savedReport);
-      nextReportId = getNextReportId();
-      reportForm.reset();
-
-      setTimeout(() => {
-        reportForm.dataset.submitting = 'false';
-      }, 0);
-    });
-
-    loadReports();
-    setInterval(removeExpiredReports, 60 * 1000);
-  </script>
-</body>
-</html>
+diff --git a/index.html b/index.html
+index adc7ed03d2a736b5b257fc9405cb460d40b384e5..6b05c78564a568cd0593bbb693d22970be71e942 100644
+--- a/index.html
++++ b/index.html
+@@ -1,533 +1,145 @@
+ <!DOCTYPE html>
+ <html lang="ko">
+ <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+-  <title>쓰레기 무단투기 신고</title>
++  <meta name="theme-color" content="#167a5a">
++  <title>ECO-PICK | 우리 동네 환경 신고</title>
+   <style>
+-    * {
+-      box-sizing: border-box;
+-    }
+-
+-    body {
+-      margin: 0;
+-      font-family: Arial, sans-serif;
+-      background: #f4f7f5;
+-      color: #1f2933;
+-    }
+-
+-    .page-header {
+-      background: #1f8a5b;
+-      color: #ffffff;
+-      padding: 32px 20px;
+-      text-align: center;
+-    }
+-
+-    .page-header h1 {
+-      margin: 0 0 8px;
+-      font-size: 28px;
+-    }
+-
+-    .page-header p {
+-      margin: 0;
+-      font-size: 16px;
+-      opacity: 0.9;
+-    }
+-
+-    main {
+-      width: min(100%, 720px);
+-      margin: 28px auto;
+-      padding: 0 20px;
+-    }
+-
+-    .report-form {
+-      background: #ffffff;
+-      border-radius: 14px;
+-      box-shadow: 0 8px 24px rgba(31, 41, 51, 0.12);
+-      padding: 24px;
+-    }
+-
+-    .form-group {
+-      margin-bottom: 18px;
+-    }
+-
+-    label {
+-      display: block;
+-      margin-bottom: 8px;
+-      font-weight: 700;
+-    }
+-
+-    input[type="file"],
+-    input[type="text"],
+-    textarea {
+-      width: 100%;
+-      border: 1px solid #cbd5d1;
+-      border-radius: 10px;
+-      padding: 12px 14px;
+-      font-size: 15px;
+-      font-family: inherit;
+-      background: #ffffff;
+-    }
+-
+-    input[type="file"] {
+-      padding: 10px;
+-    }
+-
+-    input:focus,
+-    textarea:focus {
+-      outline: none;
+-      border-color: #1f8a5b;
+-      box-shadow: 0 0 0 3px rgba(31, 138, 91, 0.15);
+-    }
+-
+-    textarea {
+-      min-height: 130px;
+-      resize: vertical;
+-    }
+-
+-    .submit-button {
+-      width: 100%;
+-      border: 0;
+-      border-radius: 10px;
+-      padding: 14px 18px;
+-      background: #1f8a5b;
+-      color: #ffffff;
+-      font-size: 16px;
+-      font-weight: 700;
+-      cursor: pointer;
+-      transition: background 0.2s ease, transform 0.2s ease;
+-    }
+-
+-    .submit-button:hover {
+-      background: #176c47;
+-      transform: translateY(-1px);
+-    }
+-
+-    .submit-button:active {
+-      transform: translateY(0);
+-    }
+-
+-    .report-list-section {
+-      margin-top: 28px;
+-    }
+-
+-    .report-list-section h2 {
+-      margin: 0 0 16px;
+-      font-size: 22px;
+-    }
+-
+-    .report-list {
+-      display: grid;
+-      gap: 14px;
+-    }
+-
+-    .empty-message {
+-      margin: 0;
+-      padding: 20px;
+-      border: 1px dashed #a8b8b0;
+-      border-radius: 12px;
+-      background: #ffffff;
+-      color: #607166;
+-      text-align: center;
+-    }
+-
+-    .report-card {
+-      background: #ffffff;
+-      border-left: 5px solid #1f8a5b;
+-      border-radius: 12px;
+-      box-shadow: 0 5px 16px rgba(31, 41, 51, 0.1);
+-      padding: 18px;
+-    }
+-
+-    .report-card.completed {
+-      background: #e5e7eb;
+-      border-left-color: #6b7280;
+-    }
+-
+-    .report-card p {
+-      margin: 0 0 10px;
+-      line-height: 1.5;
+-    }
+-
+-    .report-card-content {
+-      display: flex;
+-      gap: 16px;
+-      align-items: flex-start;
+-    }
+-
+-    .report-photo {
+-      width: 120px;
+-      height: 120px;
+-      border-radius: 10px;
+-      object-fit: cover;
+-      background: #eef2f0;
+-      flex-shrink: 0;
+-    }
+-
+-    .report-details {
+-      flex: 1;
+-      min-width: 0;
+-    }
+-
+-    .time-left {
+-      display: block;
+-      margin-bottom: 8px;
+-      color: #6b7280;
+-      font-size: 12px;
+-      font-weight: 700;
+-    }
+-
+-    @media (max-width: 520px) {
+-      .report-card-content {
+-        flex-direction: column;
+-      }
+-
+-      .report-photo {
+-        width: 100%;
+-        height: 180px;
+-      }
+-    }
+-
+-    .complete-button {
+-      border: 0;
+-      border-radius: 8px;
+-      padding: 10px 14px;
+-      background: #e7f5ee;
+-      color: #176c47;
+-      font-weight: 700;
+-      cursor: pointer;
+-    }
+-
+-    .complete-button:disabled {
+-      background: #d1d5db;
+-      color: #4b5563;
+-      cursor: default;
+-    }
+-
+-    .completed-status {
+-      display: none;
+-      margin: 12px 0 0;
+-      color: #374151;
+-      font-weight: 700;
+-    }
+-
+-    .report-card.completed .completed-status {
+-      display: block;
+-    }
+-
+-    .report-card.completed .complete-button {
+-      display: none;
+-    }
++    :root { --green:#167a5a; --dark:#123c31; --mint:#e9f7f1; --line:#dce8e2; --muted:#687a73; --orange:#ff8a3d; }
++    * { box-sizing:border-box; }
++    body { margin:0; font-family:Arial,"Apple SD Gothic Neo",sans-serif; color:#18352d; background:#f5f8f6; }
++    button,input,textarea { font:inherit; }
++    button { cursor:pointer; }
++    .topbar { height:70px; padding:0 max(20px,calc((100% - 1080px)/2)); display:flex; align-items:center; justify-content:space-between; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:20; }
++    .brand { display:flex; align-items:center; gap:10px; font-size:21px; font-weight:900; letter-spacing:-.5px; }
++    .brand-mark { display:grid; place-items:center; width:36px; height:36px; color:white; border-radius:11px; background:var(--green); }
++    .role-button { border:1px solid var(--line); border-radius:20px; padding:8px 13px; background:#fff; color:var(--dark); font-size:13px; font-weight:700; }
++    .hero { padding:45px 20px 92px; color:white; text-align:center; background:linear-gradient(135deg,#126c50,#21936e); }
++    .hero .eyebrow { margin:0 0 12px; font-size:13px; font-weight:800; letter-spacing:2px; color:#bbf0dc; }
++    .hero h1 { margin:0; font-size:clamp(30px,6vw,48px); letter-spacing:-2px; }
++    .hero p { margin:14px 0 0; color:#dcf4eb; line-height:1.6; }
++    main { width:min(1080px,calc(100% - 32px)); margin:-52px auto 60px; position:relative; }
++    .panel { background:#fff; border:1px solid var(--line); border-radius:22px; box-shadow:0 14px 35px rgba(20,70,55,.09); padding:28px; }
++    .section-head { display:flex; justify-content:space-between; align-items:end; gap:14px; margin-bottom:20px; }
++    .section-head h2 { margin:0 0 5px; font-size:22px; }
++    .section-head p { margin:0; color:var(--muted); font-size:14px; }
++    .report-form { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
++    .form-group { min-width:0; }
++    .form-group.full { grid-column:1/-1; }
++    label { display:block; margin-bottom:8px; font-size:14px; font-weight:800; }
++    input[type="text"],input[type="password"],textarea { width:100%; border:1px solid #cddbd4; border-radius:12px; padding:13px 14px; color:var(--dark); background:#fff; }
++    input:focus,textarea:focus { outline:3px solid rgba(22,122,90,.12); border-color:var(--green); }
++    textarea { min-height:110px; resize:vertical; }
++    .photo-picker { display:grid; place-items:center; min-height:160px; border:1.5px dashed #a8c8ba; border-radius:15px; background:#f7fbf9; overflow:hidden; position:relative; color:var(--green); font-weight:800; text-align:center; }
++    .photo-picker input { position:absolute; inset:0; opacity:0; cursor:pointer; }
++    .photo-picker img { width:100%; height:210px; object-fit:cover; display:none; }
++    .photo-picker.has-image img { display:block; }
++    .photo-picker.has-image .upload-copy { display:none; }
++    .map-wrap { border:1px solid var(--line); border-radius:15px; overflow:hidden; }
++    #map { height:210px; background:linear-gradient(135deg,#edf5f1,#dfece6); display:grid; place-items:center; color:var(--muted); text-align:center; padding:20px; line-height:1.5; }
++    .location-row { display:flex; gap:8px; padding:10px; background:#f8faf9; }
++    .location-row input { flex:1; }
++    .secondary-button { flex:none; border:1px solid #bad4c8; border-radius:10px; padding:0 13px; color:var(--green); background:#fff; font-weight:800; }
++    .submit-button { grid-column:1/-1; border:0; border-radius:13px; padding:15px; color:#fff; background:var(--green); font-weight:900; box-shadow:0 8px 18px rgba(22,122,90,.2); }
++    .list-panel { margin-top:22px; }
++    .filter { display:flex; align-items:center; gap:8px; color:var(--dark); font-size:14px; font-weight:700; }
++    .filter input { width:18px; height:18px; accent-color:var(--green); }
++    .report-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px; }
++    .empty-message { grid-column:1/-1; padding:45px 20px; border:1px dashed #b9ccc3; border-radius:14px; color:var(--muted); text-align:center; }
++    .report-card { overflow:hidden; border:1px solid var(--line); border-radius:16px; background:#fff; }
++    .report-card.completed { opacity:.65; }
++    .report-photo { width:100%; height:190px; object-fit:cover; background:#eaf1ed; }
++    .report-details { padding:17px; }
++    .card-top { display:flex; justify-content:space-between; gap:8px; margin-bottom:11px; }
++    .badge { padding:5px 9px; border-radius:15px; color:var(--green); background:var(--mint); font-size:12px; font-weight:900; }
++    .completed .badge { color:#66716d; background:#edf0ee; }
++    .time-left { color:var(--muted); font-size:12px; }
++    .report-details p { margin:7px 0; line-height:1.45; word-break:break-word; }
++    .complete-button { width:100%; margin-top:10px; border:0; border-radius:10px; padding:11px; color:#fff; background:var(--green); font-weight:800; }
++    .role-gate { position:fixed; inset:0; z-index:50; display:grid; place-items:center; padding:20px; background:rgba(10,36,29,.68); backdrop-filter:blur(6px); }
++    .role-gate.hidden { display:none; }
++    .gate-card { width:min(420px,100%); border-radius:25px; padding:30px; background:#fff; box-shadow:0 24px 70px rgba(0,0,0,.25); }
++    .gate-logo { color:var(--green); font-weight:900; letter-spacing:1px; }
++    .gate-card h2 { margin:12px 0 7px; font-size:27px; }
++    .gate-card>p { margin:0 0 23px; color:var(--muted); }
++    .role-choice { width:100%; display:flex; align-items:center; gap:14px; margin-top:11px; border:1px solid var(--line); border-radius:15px; padding:16px; text-align:left; background:#fff; }
++    .role-choice:hover { border-color:var(--green); background:#f5fbf8; }
++    .role-icon { display:grid; place-items:center; width:44px; height:44px; flex:none; border-radius:13px; color:white; background:var(--green); font-size:20px; }
++    .role-choice strong,.role-choice small { display:block; }
++    .role-choice small { margin-top:4px; color:var(--muted); }
++    .password-box { display:none; margin-top:18px; padding-top:18px; border-top:1px solid var(--line); }
++    .password-box.show { display:block; }
++    .password-row { display:flex; gap:8px; }
++    .password-row input { flex:1; letter-spacing:5px; }
++    .password-row button { border:0; border-radius:11px; padding:0 18px; color:#fff; background:var(--green); font-weight:800; }
++    .login-error { min-height:17px; margin:8px 0 0!important; color:#c74343!important; font-size:12px; }
++    .toast { position:fixed; left:50%; bottom:24px; z-index:80; transform:translate(-50%,120px); padding:13px 18px; border-radius:12px; background:#173f34; color:#fff; transition:.25s; }
++    .toast.show { transform:translate(-50%,0); }
++    @media(max-width:700px){ .report-form,.report-list{grid-template-columns:1fr}.report-form .full,.submit-button{grid-column:1}.panel{padding:20px}.hero{padding-top:35px}.section-head{align-items:start;flex-direction:column}.report-photo{height:210px}.location-row{flex-direction:column}.secondary-button{padding:11px} }
+   </style>
+ </head>
+ <body>
+-  <header class="page-header">
+-    <h1>쓰레기 무단투기 신고</h1>
+-    <p>사진과 위치를 남겨 깨끗한 동네 만들기에 참여해 주세요.</p>
+-  </header>
+-
++  <div class="role-gate" id="role-gate" role="dialog" aria-modal="true" aria-labelledby="gate-title">
++    <div class="gate-card">
++      <div class="gate-logo">🌿 ECO-PICK</div>
++      <h2 id="gate-title">어떤 분이신가요?</h2>
++      <p>역할에 맞는 화면으로 안내해 드릴게요.</p>
++      <button class="role-choice" id="reporter-choice"><span class="role-icon">📍</span><span><strong>신고자</strong><small>쓰레기 발견 장소를 빠르게 알려요</small></span></button>
++      <button class="role-choice" id="cleaner-choice"><span class="role-icon">🧹</span><span><strong>미화원</strong><small>접수된 신고를 확인하고 처리해요</small></span></button>
++      <form class="password-box" id="password-box">
++        <label for="cleaner-password">미화원 전용 간편 비밀번호</label>
++        <div class="password-row"><input id="cleaner-password" type="password" inputmode="numeric" maxlength="8" placeholder="비밀번호 입력" required><button>확인</button></div>
++        <p class="login-error" id="login-error" aria-live="polite"></p>
++      </form>
++    </div>
++  </div>
++
++  <header class="topbar"><div class="brand"><span class="brand-mark">♻</span>ECO-PICK</div><button class="role-button" id="role-button">역할 변경</button></header>
++  <section class="hero"><p class="eyebrow">CLEAN TOWN, BETTER LIFE</p><h1 id="hero-title">우리 동네를 깨끗하게</h1><p id="hero-copy">사진 한 장과 위치만 남겨주세요. ECO-PICK이 빠르게 연결합니다.</p></section>
+   <main>
+-    <form class="report-form" id="report-form" action="#" method="post" enctype="multipart/form-data">
+-      <div class="form-group">
+-        <label for="photo">사진 첨부</label>
+-        <input type="file" id="photo" name="photo" accept="image/*">
+-      </div>
+-
+-      <div class="form-group">
+-        <label for="location">쓰레기 위치</label>
+-        <input type="text" id="location" name="location" placeholder="예: 해운대구 우동 123 앞" required>
+-      </div>
+-
+-      <div class="form-group">
+-        <label for="description">상세 설명</label>
+-        <textarea id="description" name="description" placeholder="쓰레기 종류, 주변 특징, 발견 시간 등을 적어주세요." required></textarea>
+-      </div>
+-
+-      <button class="submit-button" type="submit">신고하기</button>
+-    </form>
+-
+-    <section class="report-list-section" aria-labelledby="report-list-title">
+-      <h2 id="report-list-title">신고 접수 목록</h2>
+-      <div class="report-list" id="report-list">
+-        <p class="empty-message">아직 접수된 신고가 없습니다.</p>
+-      </div>
++    <section class="panel" id="report-section">
++      <div class="section-head"><div><h2>새로운 신고</h2><p>사진과 지도 위치를 함께 등록하면 더 빠르게 찾을 수 있어요.</p></div></div>
++      <form class="report-form" id="report-form">
++        <div class="form-group"><label for="photo">현장 사진</label><div class="photo-picker" id="photo-picker"><input type="file" id="photo" accept="image/*" required><div class="upload-copy">📷<br><span>눌러서 사진 올리기</span></div><img id="photo-preview" alt="선택한 신고 사진 미리보기"></div></div>
++        <div class="form-group"><label>지도에서 위치 선택</label><div class="map-wrap"><div id="map">지도를 준비하고 있어요.<br>지도를 누르거나 현재 위치를 사용해 주세요.</div><div class="location-row"><input type="text" id="location" placeholder="주소 또는 장소를 입력하세요" required><button class="secondary-button" id="current-location" type="button">현재 위치</button></div></div></div>
++        <div class="form-group full"><label for="description">상세 설명</label><textarea id="description" placeholder="쓰레기 종류나 주변 특징을 알려주세요." required></textarea></div>
++        <button class="submit-button" type="submit">ECO-PICK에 신고하기</button>
++      </form>
+     </section>
++    <section class="panel list-panel" aria-labelledby="list-title"><div class="section-head"><div><h2 id="list-title">신고 현황</h2><p id="list-copy">최근 접수된 우리 동네 신고예요.</p></div><label class="filter" id="filter-wrap"><input type="checkbox" id="unresolved-only"> 미해결 신고만 보기</label></div><div class="report-list" id="report-list"></div></section>
+   </main>
++  <div class="toast" id="toast" role="status"></div>
+ 
+   <script>
+-    const STORAGE_KEY = 'trashReports';
+-    const API_URL = '/api/reports';
+-    const REPORT_EXPIRATION_MS = 24 * 60 * 60 * 1000;
+-    let reports = [];
+-    let nextReportId = 1;
+-    let useRemoteStorage = false;
+-
+-    const reportForm = document.getElementById('report-form');
+-    const photoInput = document.getElementById('photo');
+-    const locationInput = document.getElementById('location');
+-    const descriptionInput = document.getElementById('description');
+-    const reportList = document.getElementById('report-list');
+-
+-    function isReportExpired(report) {
+-      return Date.now() - new Date(report.created_at).getTime() >= REPORT_EXPIRATION_MS;
+-    }
+-
+-    function getActiveReports(reportItems) {
+-      return reportItems.filter((report) => !isReportExpired(report));
+-    }
+-
+-    function loadLocalReports() {
+-      const savedReports = localStorage.getItem(STORAGE_KEY);
+-
+-      if (!savedReports) {
+-        return [];
+-      }
+-
+-      const activeReports = getActiveReports(JSON.parse(savedReports));
+-      localStorage.setItem(STORAGE_KEY, JSON.stringify(activeReports));
+-      return activeReports;
+-    }
+-
+-    function saveLocalReports() {
+-      localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+-    }
+-
+-    function getNextReportId() {
+-      if (reports.length === 0) {
+-        return 1;
+-      }
+-
+-      const lastReportId = Math.max(...reports.map((report) => report.id));
+-      return lastReportId + 1;
+-    }
+-
+-    function getTimeLeftText(report) {
+-      const createdAt = new Date(report.created_at).getTime();
+-      const remainingMs = Math.max(0, REPORT_EXPIRATION_MS - (Date.now() - createdAt));
+-      const hours = Math.floor(remainingMs / (60 * 60 * 1000));
+-      const minutes = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+-
+-      return `${hours}시간 ${minutes}분 남음`;
+-    }
+-
+-    function readPhotoData() {
+-      const [photoFile] = photoInput.files;
+-
+-      if (!photoFile) {
+-        return Promise.resolve('');
+-      }
+-
+-      return new Promise((resolve, reject) => {
+-        const reader = new FileReader();
+-
+-        reader.addEventListener('load', () => resolve(reader.result));
+-        reader.addEventListener('error', reject);
+-        reader.readAsDataURL(photoFile);
+-      });
+-    }
+-
+-    function renderEmptyMessage() {
+-      reportList.innerHTML = '<p class="empty-message">아직 접수된 신고가 없습니다.</p>';
+-    }
+-
+-    function renderReportList() {
+-      reportList.innerHTML = '';
+-
+-      if (reports.length === 0) {
+-        renderEmptyMessage();
+-        return;
+-      }
+-
+-      reports.forEach(renderReportCard);
+-      updateTimeLeftLabels();
+-    }
+-
+-    async function loadReports() {
+-      try {
+-        const response = await fetch(API_URL);
+-
+-        if (!response.ok) {
+-          throw new Error('공유 신고 목록을 불러오지 못했습니다.');
+-        }
+-
+-        reports = getActiveReports(await response.json());
+-        useRemoteStorage = true;
+-      } catch (error) {
+-        reports = loadLocalReports();
+-        useRemoteStorage = false;
+-      }
+-
+-      nextReportId = getNextReportId();
+-      renderReportList();
+-    }
+-
+-    async function createReport(report) {
+-      if (!useRemoteStorage) {
+-        reports.push(report);
+-        saveLocalReports();
+-        return report;
+-      }
+-
+-      const response = await fetch(API_URL, {
+-        method: 'POST',
+-        headers: {
+-          'Content-Type': 'application/json'
+-        },
+-        body: JSON.stringify(report)
+-      });
+-
+-      if (!response.ok) {
+-        throw new Error('신고를 저장하지 못했습니다.');
+-      }
+-
+-      return response.json();
+-    }
+-
+-    async function completeReport(report) {
+-      report.is_completed = true;
+-
+-      if (!useRemoteStorage) {
+-        saveLocalReports();
+-        return;
+-      }
+-
+-      await fetch(`${API_URL}/${report.id}`, {
+-        method: 'PATCH',
+-        headers: {
+-          'Content-Type': 'application/json'
+-        },
+-        body: JSON.stringify({ is_completed: true })
+-      });
+-    }
+-
+-    function removeExpiredReports() {
+-      const activeReports = getActiveReports(reports);
+-
+-      if (activeReports.length === reports.length) {
+-        updateTimeLeftLabels();
+-        return;
+-      }
+-
+-      reports = activeReports;
+-
+-      if (!useRemoteStorage) {
+-        saveLocalReports();
+-      }
+-
+-      renderReportList();
+-    }
+-
+-    function updateTimeLeftLabels() {
+-      reports.forEach((report) => {
+-        const timeLeftLabel = reportList.querySelector(`[data-time-left-id="${report.id}"]`);
+-
+-        if (timeLeftLabel) {
+-          timeLeftLabel.textContent = getTimeLeftText(report);
+-        }
+-      });
+-    }
+-
+-    function renderReportCard(report) {
+-      const existingCard = reportList.querySelector(`[data-report-id="${report.id}"]`);
+-
+-      if (existingCard) {
+-        return;
+-      }
+-
+-      const reportCard = document.createElement('article');
+-      const cardContent = document.createElement('div');
+-      const reportDetails = document.createElement('div');
+-      const timeLeftLabel = document.createElement('small');
+-      const locationText = document.createElement('p');
+-      const descriptionText = document.createElement('p');
+-      const completeButton = document.createElement('button');
+-      const completedStatus = document.createElement('p');
+-
+-      reportCard.className = report.is_completed ? 'report-card completed' : 'report-card';
+-      reportCard.dataset.reportId = report.id;
+-      cardContent.className = 'report-card-content';
+-      reportDetails.className = 'report-details';
+-      timeLeftLabel.className = 'time-left';
+-      timeLeftLabel.dataset.timeLeftId = report.id;
+-      timeLeftLabel.textContent = getTimeLeftText(report);
+-      locationText.innerHTML = '<strong>위치</strong>: ';
+-      locationText.append(report.location);
+-      descriptionText.innerHTML = '<strong>설명</strong>: ';
+-      descriptionText.append(report.description);
+-      completeButton.className = 'complete-button';
+-      completeButton.type = 'button';
+-      completeButton.textContent = '처리 완료';
+-      completeButton.disabled = report.is_completed;
+-      completedStatus.className = 'completed-status';
+-      completedStatus.textContent = '처리 완료됨';
+-
+-      if (report.photoData) {
+-        const reportPhoto = document.createElement('img');
+-        reportPhoto.className = 'report-photo';
+-        reportPhoto.src = report.photoData;
+-        reportPhoto.alt = `${report.location} 신고 사진`;
+-        cardContent.append(reportPhoto);
+-      }
+-
+-      completeButton.addEventListener('click', async () => {
+-        if (report.is_completed) {
+-          return;
+-        }
+-
+-        await completeReport(report);
+-        reportCard.classList.add('completed');
+-        completeButton.disabled = true;
+-      });
+-
+-      reportDetails.append(timeLeftLabel, locationText, descriptionText, completeButton, completedStatus);
+-      cardContent.append(reportDetails);
+-      reportCard.append(cardContent);
+-      reportList.appendChild(reportCard);
+-    }
+-
+-    reportForm.addEventListener('submit', async (event) => {
+-      event.preventDefault();
+-
+-      if (reportForm.dataset.submitting === 'true') {
+-        return;
+-      }
+-
+-      reportForm.dataset.submitting = 'true';
+-
+-      const location = locationInput.value.trim();
+-      const description = descriptionInput.value.trim();
+-
+-      if (!location || !description) {
+-        reportForm.dataset.submitting = 'false';
+-        return;
+-      }
+-
+-      const report = {
+-        id: nextReportId,
+-        location,
+-        description,
+-        photoData: await readPhotoData(),
+-        created_at: new Date().toISOString(),
+-        is_completed: false
+-      };
+-
+-      const savedReport = await createReport(report);
+-
+-      if (useRemoteStorage) {
+-        reports.push(savedReport);
+-      }
+-
+-      renderReportCard(savedReport);
+-      nextReportId = getNextReportId();
+-      reportForm.reset();
+-
+-      setTimeout(() => {
+-        reportForm.dataset.submitting = 'false';
+-      }, 0);
+-    });
+-
+-    loadReports();
+-    setInterval(removeExpiredReports, 60 * 1000);
++    const STORAGE_KEY='ecoPickReports'; const API_URL='/api/reports'; const EXPIRATION=86400000;
++    let reports=[]; let remote=false; let role='reporter'; let cleanerToken=''; let coordinates=null; let kakaoMap=null; let marker=null;
++    const $=(id)=>document.getElementById(id);
++    const gate=$('role-gate'), reportSection=$('report-section'), reportList=$('report-list'), filterWrap=$('filter-wrap');
++
++    function toast(message){$('toast').textContent=message;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2200);}
++    function setRole(nextRole){role=nextRole;gate.classList.add('hidden');reportSection.hidden=role==='cleaner';filterWrap.hidden=role!=='cleaner';$('hero-title').textContent=role==='cleaner'?'오늘도 깨끗한 우리 동네':'우리 동네를 깨끗하게';$('hero-copy').textContent=role==='cleaner'?'미해결 신고를 확인하고 처리 상태를 업데이트하세요.':'사진 한 장과 위치만 남겨주세요. ECO-PICK이 빠르게 연결합니다.';$('role-button').textContent=role==='cleaner'?'🧹 미화원':'📍 신고자';renderReports();}
++    $('reporter-choice').onclick=()=>setRole('reporter');
++    $('cleaner-choice').onclick=()=>{$('password-box').classList.add('show');$('cleaner-password').focus();};
++    $('role-button').onclick=()=>{gate.classList.remove('hidden');$('password-box').classList.remove('show');$('login-error').textContent='';};
++    $('password-box').onsubmit=async(e)=>{e.preventDefault();try{const response=await fetch('/api/cleaner/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('cleaner-password').value})});if(!response.ok)throw new Error();cleanerToken=(await response.json()).token;$('cleaner-password').value='';setRole('cleaner');}catch(error){$('login-error').textContent='비밀번호가 올바르지 않습니다.';}};
++
++    function active(items){return items.filter(r=>Date.now()-new Date(r.created_at).getTime()<EXPIRATION);}
++    async function loadReports(){try{const response=await fetch(API_URL);if(!response.ok)throw new Error();reports=active(await response.json());remote=true;}catch(error){reports=active(JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'));remote=false;}renderReports();}
++    function renderReports(){reportList.innerHTML='';const visible=reports.filter(r=>!$('unresolved-only').checked||!r.is_completed);if(!visible.length){reportList.innerHTML='<p class="empty-message">표시할 신고가 없습니다. 🌱</p>';return;}visible.slice().reverse().forEach(renderCard);}
++    function renderCard(report){const card=document.createElement('article');card.className=`report-card${report.is_completed?' completed':''}`;if(report.photoData){const image=document.createElement('img');image.className='report-photo';image.src=report.photoData;image.alt=`${report.location} 신고 사진`;card.append(image);}const details=document.createElement('div');details.className='report-details';const top=document.createElement('div');top.className='card-top';top.innerHTML=`<span class="badge">${report.is_completed?'처리 완료':'처리 대기'}</span><span class="time-left">${timeText(report)}</span>`;const location=document.createElement('p');location.innerHTML='<strong>📍 위치</strong> ';location.append(report.location);const description=document.createElement('p');description.innerHTML='<strong>내용</strong> ';description.append(report.description);details.append(top,location,description);if(role==='cleaner'&&!report.is_completed){const button=document.createElement('button');button.className='complete-button';button.textContent='처리 완료로 변경';button.onclick=()=>completeReport(report);details.append(button);}card.append(details);reportList.append(card);}
++    function timeText(report){const minutes=Math.max(0,Math.floor((EXPIRATION-(Date.now()-new Date(report.created_at)))/60000));return minutes>=60?`${Math.floor(minutes/60)}시간 ${minutes%60}분 남음`:`${minutes}분 남음`;}
++    $('unresolved-only').onchange=renderReports;
++
++    $('photo').onchange=()=>{const [file]=$('photo').files;if(!file)return;const reader=new FileReader();reader.onload=()=>{$('photo-preview').src=reader.result;$('photo-picker').classList.add('has-image');};reader.readAsDataURL(file);};
++    function photoData(){return $('photo-preview').src.startsWith('data:')?$('photo-preview').src:'';}
++    $('report-form').onsubmit=async(e)=>{e.preventDefault();const report={id:Date.now(),location:$('location').value.trim(),description:$('description').value.trim(),photoData:photoData(),latitude:coordinates?.lat||null,longitude:coordinates?.lng||null,created_at:new Date().toISOString(),is_completed:false};try{if(remote){const response=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(report)});if(!response.ok)throw new Error();reports.push(await response.json());}else{reports.push(report);localStorage.setItem(STORAGE_KEY,JSON.stringify(reports));}$('report-form').reset();$('photo-picker').classList.remove('has-image');$('photo-preview').removeAttribute('src');renderReports();toast('신고가 접수되었습니다. 고맙습니다!');}catch(error){toast('신고 저장에 실패했습니다. 다시 시도해 주세요.');}};
++    async function completeReport(report){try{if(remote){const response=await fetch(`${API_URL}/${report.id}`,{method:'PATCH',headers:{'Content-Type':'application/json','X-Cleaner-Token':cleanerToken},body:'{}'});if(!response.ok)throw new Error();}report.is_completed=true;if(!remote)localStorage.setItem(STORAGE_KEY,JSON.stringify(reports));renderReports();toast('처리 완료로 변경했습니다.');}catch(error){toast('권한을 확인한 뒤 다시 시도해 주세요.');}}
++
++    function setMapLocation(lat,lng){coordinates={lat,lng};if(kakaoMap){const point=new kakao.maps.LatLng(lat,lng);kakaoMap.setCenter(point);marker.setPosition(point);}}
++    $('current-location').onclick=()=>{if(!navigator.geolocation){toast('현재 위치를 사용할 수 없습니다.');return;}navigator.geolocation.getCurrentPosition(({coords})=>{setMapLocation(coords.latitude,coords.longitude);$('location').value=`위도 ${coords.latitude.toFixed(5)}, 경도 ${coords.longitude.toFixed(5)}`;toast('현재 위치를 지도에 표시했습니다.');},()=>toast('위치 권한을 허용해 주세요.'));};
++    async function loadMap(){try{const config=await fetch('/api/config').then(r=>r.json());if(!config.kakaoMapKey){$('map').innerHTML='카카오맵 API 키를 설정하면<br>지도에서 정확한 위치를 선택할 수 있어요.';return;}const script=document.createElement('script');script.src=`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(config.kakaoMapKey)}&autoload=false&libraries=services`;script.onload=()=>kakao.maps.load(()=>{const center=new kakao.maps.LatLng(37.5665,126.978);kakaoMap=new kakao.maps.Map($('map'),{center,level:5});marker=new kakao.maps.Marker({position:center,map:kakaoMap});kakao.maps.event.addListener(kakaoMap,'click',({latLng})=>{setMapLocation(latLng.getLat(),latLng.getLng());$('location').value=`위도 ${latLng.getLat().toFixed(5)}, 경도 ${latLng.getLng().toFixed(5)}`;});});document.head.append(script);}catch(error){$('map').textContent='지도를 불러오지 못했습니다.';}}
++    loadReports(); loadMap(); setInterval(()=>{reports=active(reports);renderReports();},60000);
+   </script>
+ </body>
+ </html>
