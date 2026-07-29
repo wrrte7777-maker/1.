@@ -1,3 +1,4 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/README.md b/README.md
 index 504f2efd76b5fdefec7cceb9c53247928ed6a50c..d0ce8305b97192f7f3581c140c574dd005ee4ff9 100644
 --- a/README.md
@@ -66,3 +67,6 @@ index 504f2efd76b5fdefec7cceb9c53247928ed6a50c..d0ce8305b97192f7f3581c140c574dd0
 +- 로컬 개발 시에만 `data/reports.json`을 대체 저장소로 사용합니다.
 +- 신고는 생성 후 24시간이 지나면 조회 시 자동 삭제됩니다.
 +- 업로드 사진은 Base64 데이터로 저장되므로 운영 규모가 커지면 Cloudinary 또는 S3 같은 객체 저장소 사용을 권장합니다.
+ 
+EOF
+)
