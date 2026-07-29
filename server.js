@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = __dirname;
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'reports.json');
+const REPORT_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -14,12 +15,27 @@ const MIME_TYPES = {
   '.json': 'application/json; charset=utf-8'
 };
 
+function isReportExpired(report) {
+  return Date.now() - new Date(report.created_at).getTime() >= REPORT_EXPIRATION_MS;
+}
+
+function getActiveReports(reports) {
+  return reports.filter((report) => !isReportExpired(report));
+}
+
 async function readReports() {
   await mkdir(DATA_DIR, { recursive: true });
 
   try {
     const data = await readFile(DATA_FILE, 'utf-8');
-    return JSON.parse(data);
+    const reports = JSON.parse(data);
+    const activeReports = getActiveReports(reports);
+
+    if (activeReports.length !== reports.length) {
+      await writeReports(activeReports);
+    }
+
+    return activeReports;
   } catch (error) {
     await writeFile(DATA_FILE, '[]');
     return [];
@@ -66,6 +82,8 @@ async function handleApiRequest(request, response) {
       id: nextId,
       location: body.location,
       description: body.description,
+      photoData: body.photoData || '',
+      created_at: new Date().toISOString(),
       is_completed: false
     };
 
